@@ -14,7 +14,7 @@ INSERT_TEMP = (
     "INSERT INTO temperatures (room_id, temperature, date) VALUES (%s, %s, %s);"
 )
 
-ROOM_NAME = """SELECT name FROM rooms WHERE id=(%s)"""
+ROOM_NAME = """SELECT name FROM rooms WHERE id = (%s)"""
 
 ROOM_NUMBER_OF_DAYS = """SELECT COUNT(DISTINCT DATE(date)) AS days FROM temperatures WHERE room_id = (%s);"""
 ROOM_ALL_TIME_AVG = (
@@ -41,7 +41,7 @@ app = Flask(__name__)
 
 
 # {"name": "Room name"}
-@app.route("/api/room", methods=["POST"])
+@app.post("/api/room")
 def create_room():
     data = request.get_json()
     name = data["name"]
@@ -50,27 +50,27 @@ def create_room():
             cursor.execute(CREATE_ROOMS_TABLE)
             cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
             room_id = cursor.fetchone()[0]
-    return {"id": room_id, "message": f"Room {name} created."}
+    return {"id": room_id, "message": f"Room {name} created."}, 201
 
 
 # {"temperature": 15.9, "room": 2 "date": "%m-%d-%Y %H:%M:%S"} date is optional
-@app.route("/api/temperature", methods=["POST"])
+@app.post("/api/temperature")
 def add_temp():
     data = request.get_json()
     temperature = data["temperature"]
     room_id = data["room"]
     try:
         date = datetime.strptime(data["date"], "%m-%d-%Y %H:%M:%S")
-    except:
+    except KeyError:
         date = datetime.now(timezone.utc)
     with connection:
         with connection.cursor() as cursor:
             cursor.execute(CREATE_TEMPS_TABLE)
             cursor.execute(INSERT_TEMP, (room_id, temperature, date))
-    return {"message": "Temperature added."}
+    return {"message": "Temperature added."}, 201
 
 
-@app.route("/api/room/<int:room_id>")
+@app.get("/api/room/<int:room_id>")
 def get_room_all(room_id):
     args = request.args
     term = args.get("term")
@@ -104,7 +104,7 @@ def get_room_term(room_id, term):
     }
 
 
-@app.route("/api/average")
+@app.get("/api/average")
 def get_global_avg():
     with connection:
         with connection.cursor() as cursor:
