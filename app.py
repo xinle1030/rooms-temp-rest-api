@@ -2,6 +2,7 @@ from flask import Flask, request
 from datetime import datetime, timezone
 import psycopg2
 import os
+from utilities.room_util import *
 
 CREATE_ROOMS_TABLE = (
     "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
@@ -86,22 +87,6 @@ def get_room_all(room_id):
                 cursor.execute(ROOM_NUMBER_OF_DAYS, (room_id,))
                 days = cursor.fetchone()[0]
         return {"name": name, "average": round(average, 2), "days": days}
-
-
-def get_room_term(room_id, term):
-    terms = {"week": 7, "month": 30}
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(ROOM_NAME, (room_id,))
-            name = cursor.fetchone()[0]
-            cursor.execute(ROOM_TERM, (room_id, terms[term]))
-            dates_temperatures = cursor.fetchall()
-    average = sum(day[1] for day in dates_temperatures) / len(dates_temperatures)
-    return {
-        "name": name,
-        "temperatures": dates_temperatures,
-        "average": round(average, 2),
-    }
 
 
 @app.get("/api/average")
